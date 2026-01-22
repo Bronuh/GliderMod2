@@ -6,6 +6,7 @@ using Cake.Common.Tools.DotNet;
 using Cake.Common.Tools.DotNet.Clean;
 using Cake.Common.Tools.DotNet.Publish;
 using Cake.Core;
+using Cake.Core.Diagnostics;
 using Cake.Frosting;
 using Cake.Json;
 using Newtonsoft.Json;
@@ -26,20 +27,160 @@ namespace CakeBuild
 
     public class BuildContext : FrostingContext
     {
-        public const string ProjectName = "GliderMod";
+        public const string ProjectName = "GlidierGlider";
+        public const string TestEnvVariableName = "VINTAGE_STORY_TESTENV";
+        public const string VintageStoryExecutableName = "Vintagestory.dll";
+        public const string VintageStoryTestEnvGameDirName = "Vintagestory";
+        public const string VintageStoryTestEnvDataDirName = "Data";
+        public const string VintageStoryTestEnvModsDirName = "TestMods";
+        
+        
+        public string VintageStoryTestInstanceExecutablePath { get; private set; }
+        public string VintageStoryMainInstancePath { get; private set; }
+        public string VintageStoryTestEnvironmentPath { get; private set; }
+        public string VintageStoryRequestedTestEnvironmentPath { get; private set; }
+        
+        
         public string BuildConfiguration { get; }
         public string Version { get; }
         public string Name { get; }
         public bool SkipJsonValidation { get; }
+        public bool UseLazyTestEnvironment { get; }
+        public bool DefineEnvVar { get; }
+        
 
         public BuildContext(ICakeContext context)
             : base(context)
         {
             BuildConfiguration = context.Argument("configuration", "Release");
             SkipJsonValidation = context.Argument("skipJsonValidation", false);
+
+            VintageStoryMainInstancePath = context.Argument<string>("mainInstancePath", null);
+            VintageStoryRequestedTestEnvironmentPath = context.Argument<string>("testEnvPath", null);
+            UseLazyTestEnvironment = !context.Argument("useSeparateInstance", false);
+            DefineEnvVar = context.Argument("defineEnvVar", false);
+            
+            VintageStoryTestEnvironmentPath = VintageStoryRequestedTestEnvironmentPath;
             var modInfo = context.DeserializeJsonFromFile<ModInfo>($"../{ProjectName}/modinfo.json");
             Version = modInfo.Version;
             Name = modInfo.ModID;
+            
+            ResolveTestEnvironmentPath();
+            ResolveMainInstancePath();
+            ResolveTestInstanceExecutablePath();
+        }
+
+        private void ResolveTestInstanceExecutablePath()
+        {
+            if (UseLazyTestEnvironment)
+            {
+                if (VintageStoryMainInstancePath is not null)
+                {
+                    VintageStoryMainInstancePath = this.Directory(VintageStoryMainInstancePath)
+                        .Path
+                        .MakeAbsolute(Environment)
+                        .FullPath;
+
+                    VintageStoryTestInstanceExecutablePath = Path.Combine(
+                        VintageStoryMainInstancePath,
+                        VintageStoryExecutableName);
+
+                    return;
+                }
+
+                Log.Warning(
+                    "BuildContext.ResolveTestInstanceExecutablePath: Unable to locate the Vintage Story main instance path.");
+            }
+
+            if (VintageStoryTestEnvironmentPath is not null)
+            {
+                VintageStoryTestInstanceExecutablePath = Path.Combine(
+                    VintageStoryTestEnvironmentPath,
+                    VintageStoryTestEnvGameDirName,
+                    VintageStoryExecutableName);
+
+                return;
+            }
+
+            Log.Warning(
+                "BuildContext.ResolveTestInstanceExecutablePath: Unable to locate the Vintage Story test instance executable path.");
+        }
+
+        private void ResolveTestEnvironmentPath()
+        {
+            VintageStoryTestEnvironmentPath ??= Environment.GetEnvironmentVariable(TestEnvVariableName);
+
+            if (VintageStoryTestEnvironmentPath is not null)
+            {
+                VintageStoryTestEnvironmentPath = this.Directory(VintageStoryTestEnvironmentPath)
+                    .Path
+                    .MakeAbsolute(Environment)
+                    .FullPath;
+
+                if (!this.DirectoryExists(VintageStoryTestEnvironmentPath))
+                {
+                    Log.Warning(
+                        $"BuildContext.ResolveTestEnvironmentPath: The test environment path is unreachable: {VintageStoryTestEnvironmentPath}.\n" +
+                        "Run the SetupTestEnvironment task or create it manually " +
+                        "(see instructions in README.md).");
+                }
+                else
+                {
+                    Log.Information(
+                        $"BuildContext.ResolveTestEnvironmentPath: Test environment path resolved: {VintageStoryTestEnvironmentPath}");
+                }
+            }
+            else
+            {
+                Log.Warning(
+                    "BuildContext.ResolveTestEnvironmentPath: The test environment path is not defined. " +
+                    "Use --testEnvPath=\"path\" to specify it " +
+                    $"or set the {TestEnvVariableName} environment variable.");
+            }
+        }
+
+        private void ResolveMainInstancePath()
+        {
+            if (VintageStoryMainInstancePath is null)
+            {
+                Log.Information(
+                    "BuildContext.ResolveMainInstancePath: VintageStoryMainInstancePath is not defined, using the VINTAGE_STORY environment variable.");
+
+                VintageStoryMainInstancePath = this.EnvironmentVariable("VINTAGE_STORY");
+
+                if (VintageStoryMainInstancePath is null)
+                {
+                    Log.Information(
+                        "BuildContext.ResolveMainInstancePath: The VINTAGE_STORY environment variable is not defined, using the default path.");
+
+                    var appData = Environment.GetEnvironmentVariable("APPDATA");
+                    if (appData is null)
+                    {
+                        Log.Error(
+                            "BuildContext.ResolveMainInstancePath: The %APPDATA% environment variable is unexpectedly undefined.");
+                        return;
+                    }
+
+                    // It's OK to fail because of a null value
+                    VintageStoryMainInstancePath = Path.Combine(appData, "Vintagestory");
+                }
+            }
+
+            VintageStoryMainInstancePath = this.Directory(VintageStoryMainInstancePath)
+                .Path
+                .MakeAbsolute(Environment)
+                .FullPath;
+
+            if (!Directory.Exists(VintageStoryMainInstancePath))
+            {
+                Log.Warning(
+                    "BuildContext.ResolveMainInstancePath: Unable to locate the Vintage Story main instance path.");
+            }
+            else
+            {
+                Log.Information(
+                    $"BuildContext.ResolveMainInstancePath: Main instance path resolved: {VintageStoryMainInstancePath}");
+            }
         }
     }
 
@@ -112,9 +253,12 @@ namespace CakeBuild
         }
     }
 
+    
+    
     [TaskName("Default")]
     [IsDependentOn(typeof(PackageTask))]
     public class DefaultTask : FrostingTask
     {
+        
     }
 }

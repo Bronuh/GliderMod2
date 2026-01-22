@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="GlidierGlider/GlidierGlider.csproj" />
+  <Project Path="ZZCakeBuild/CakeBuild.csproj" />
+</Solution>
