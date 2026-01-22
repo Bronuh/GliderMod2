@@ -47,3 +47,105 @@ This mod modifies the vanilla glider's core behavior. It should be compatible wi
 I welcome contributions to this mod! If you'd like to help, please feel free to open a pull request.
 
 * **Reporting Bugs:** If you find a bug, please create a new issue.
+
+## Development Guide (for Contributors)
+
+### Quick Start
+
+1. Prepare your system up to the environment variables section (you can skip env vars if your game is installed in the default location) by following the official guide:
+   https://wiki.vintagestory.at/Modding:Preparing_For_Code_Mods
+2. Clone or download this repository.
+3. In the `Scripts` folder, run:
+
+   **Windows**
+   ```shell
+   ./setupHere.ps1
+   ```
+
+   **Linux / macOS**
+   ```shell
+   ./setupHere.sh
+   ```
+
+4. (Optional) Pass `--defineEnvVar=true` so you don’t have to specify the test environment path every time:
+   ```shell
+   ./setupHere.ps1 --defineEnvVar=true
+   ```
+
+5. Open the solution in your IDE and do your coding magic in the `GlidierGlider` project.
+6. Run the test script from the `Scripts` folder:
+
+   **Windows**
+   ```shell
+   ./test.ps1
+   ```
+
+   **Linux / macOS**
+   ```shell
+   ./test.sh
+   ```
+
+7. Play around with your mod in the test environment.
+
+---
+
+### Testing Options
+
+#### Custom Test Environment Location
+
+If you want the test environment somewhere else, run `setup` with:
+
+```shell
+./setup.ps1 --testEnvPath="/path/to/test/env"
+```
+
+Example:
+```shell
+./setup.ps1 --testEnvPath="D:/UserFiles/Desktop/VintageTestEnvironment"
+```
+
+---
+
+#### Using a Separate Game Instance
+
+If you want to run a separate game instance, use `--useSeparateInstance=true` during setup and testing. This copies **game files only** (not user data) into the test environment.
+
+```shell
+./setup.ps1 --testEnvPath="D:/UserFiles/Desktop/VintageTestEnvironment" --useSeparateInstance=true
+```
+
+> [!Note]
+> This also works with `setupHere`:
+> ```shell
+> ./setupHere.ps1 --useSeparateInstance=true
+> ```
+
+---
+
+#### Persistent Mods in Test Environment
+
+If you need additional mods that shouldn’t be wiped on every test run, put them into `Data/Mods` inside the test environment.
+
+> [!Important]
+> Even these mods will be removed if you run `setup` again in that environment.
+
+---
+
+### Scripts Overview
+
+The `Scripts` folder contains several helper scripts:
+
+- **build** — Runs the Cake build. With no arguments, builds the mod and puts it into the `Releases` folder.
+- **package** — Same as `build`, just more verbose.
+- **setup** — Creates a test environment. Supported arguments:
+  - **(Required)** `--testEnvPath="D:/UserFiles/Desktop/VintageTestEnvironment"` — where to create the test environment
+  - `--useSeparateInstance=true` — copies game files into the test environment
+  - `--mainInstancePath="C:\Users\Username\AppData\Roaming\Vintagestory"` — path to an existing game install
+  - `--defineEnvVar=true` — sets the **VINTAGE_STORY_TESTENV** environment variable
+- **setupHere** — Same as `setup`, but uses `../TestEnv` as the test environment path (inside the solution)
+  - Using `--defineEnvVar=true` is recommended for convenience
+- **test** — Builds the mod, copies it into the test environment, and launches the game. Supported arguments:
+  - `--testEnvPath="D:/UserFiles/Desktop/VintageTestEnvironment"`
+  - `--useSeparateInstance=true`
+  - `--mainInstancePath="C:\Users\Username\AppData\Roaming\Vintagestory"`
+
