@@ -1,0 +1,17 @@
+﻿{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "Package": {
+      "commandName": "Project",
+      "commandLineArgs": "-t=\"Package\""
+    },
+    "Setup Test Environment": {
+      "commandName": "Project",
+      "commandLineArgs": "-t=\"SetupTestEnvironment\" --testEnvPath=\"../TestEnv\" --defineEnvVar=true"
+    },
+    "Test": {
+      "commandName": "Project",
+      "commandLineArgs": "-t=\"Test\""
+    }
+  }
+}
