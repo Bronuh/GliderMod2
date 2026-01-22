@@ -156,7 +156,8 @@ public sealed class TestTask : FrostingTask<BuildContext>
         var executablePath = context.VintageStoryTestInstanceExecutablePath;
         var args =
             $"--dataPath=\"{Path.Combine(context.VintageStoryTestEnvironmentPath, BuildContext.VintageStoryTestEnvDataDirName)}\" " +
-            $"--addModPath=\"{Path.Combine(context.VintageStoryTestEnvironmentPath, BuildContext.VintageStoryTestEnvModsDirName)}\"";
+            $"--addModPath=\"{Path.Combine(context.VintageStoryTestEnvironmentPath, BuildContext.VintageStoryTestEnvModsDirName)}\" " +
+            $"--tracelog";
 
         log.Information($"Running {executablePath} {args}");
         context.DotNetExecute(executablePath, args);

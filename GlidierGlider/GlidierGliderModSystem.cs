@@ -8,37 +8,46 @@ using Vintagestory.API.MathTools;
 
 namespace GliderMod
 {
-
     public class GlidierGliderModSystem : ModSystem
     {
-        protected const string harmonyId = "glidierglider";
-
-        public const float speedMin = 0.0001f;
-        public const float speedFactor = 0.25f;
-        public const float speedMax = 1.5f;
-
-        public const float fallSpeed = 0.5f;
-
-        public const float verticalLerpFactor = 25f;
-        public const float horizontalLerpFactor = 40f;
-
-        protected Harmony harmony;
+        public static ModConfig Config;
+        protected const string HarmonyId = "glidierglider";
+        protected Harmony Harmony;
 
         public override void Start(ICoreAPI api)
         {
-            base.Start(api);
-
-            this.harmony = new Harmony(harmonyId);
-            harmony.PatchAll(Assembly.GetExecutingAssembly());
+            TryToLoadConfig(api);
+            
+            Harmony = new Harmony(HarmonyId);
+            Harmony.PatchAll(Assembly.GetExecutingAssembly());
         }
 
         public override void Dispose()
         {
-            base.Dispose();
 
-            if (harmony != null)
+            if (Harmony != null)
             {
-                this.harmony.UnpatchAll(harmonyId);
+                Harmony.UnpatchAll(HarmonyId);
+            }
+        }
+        
+        private void TryToLoadConfig(ICoreAPI api) 
+        {
+            try
+            {
+                Config = api.LoadModConfig<ModConfig>("GlidierGlider.json");
+                if (Config == null)
+                {
+                    Config = new ModConfig();
+                }
+                //Save a copy of the mod config.
+                api.StoreModConfig<ModConfig>(Config, "GlidierGlider.json");
+            }
+            catch (Exception e)
+            {
+                Mod.Logger.Error("Could not load config! Loading default settings instead.");
+                Mod.Logger.Error(e);
+                Config = new ModConfig();
             }
         }
     }
@@ -108,22 +117,25 @@ namespace GliderMod
                 }
                 double glideFactor = viewVector.Y;
 
-                controls.GlideSpeed = GameMath.Clamp(controls.GlideSpeed - (glideFactor * dt * GlidierGliderModSystem.speedFactor), GlidierGliderModSystem.speedMin, GlidierGliderModSystem.speedMax);
+
+                controls.GlideSpeed = GameMath.Clamp(controls.GlideSpeed - (glideFactor * dt * GlidierGliderModSystem.Config.SpeedFactor), 
+                    GlidierGliderModSystem.Config.SpeedMin, 
+                    GlidierGliderModSystem.Config.SpeedMax);
 
                 double yaw = Math.Atan2(pos.Motion.X, pos.Motion.Z);
 
                 double motionLength = pos.Motion.Length();
                 double pitch = motionLength == 0 ? 0d : Math.Asin(pos.Motion.Y / motionLength);
 
-                double lerpYaw = LerpAngle(yaw, pos.Yaw, GlidierGliderModSystem.horizontalLerpFactor * dt);
-                double lerpPitch = LerpPitch(pitch, Math.PI - pos.Pitch, GlidierGliderModSystem.verticalLerpFactor * dt);
+                double lerpYaw = LerpAngle(yaw, pos.Yaw, GlidierGliderModSystem.Config.HorizontalLerpFactor * dt);
+                double lerpPitch = LerpPitch(pitch, Math.PI - pos.Pitch, GlidierGliderModSystem.Config.VerticalLerpFactor * dt);
 
                 double cosPitch = Math.Cos(lerpPitch);
 
                 Vec3d smoothed = new Vec3d(cosPitch * Math.Sin(lerpYaw), Math.Sin(lerpPitch), cosPitch * Math.Cos(lerpYaw)).Normalize();
 
                 pos.Motion = smoothed.Mul(controls.GlideSpeed);
-                pos.Motion.Y -= GlidierGliderModSystem.fallSpeed * dt;
+                pos.Motion.Y -= GlidierGliderModSystem.Config.FallSpeed * dt;
             }
             else
             {
