@@ -115,8 +115,20 @@ namespace GliderMod
                 {
                     controls.GlideSpeed = pos.Motion.Length();
                 }
-                double glideFactor = viewVector.Y;
 
+                double glideFactor = viewVector.Y;
+                if (GlidierGliderModSystem.Config.EnableJetMode)
+                {
+                    if (controls.CtrlKey)
+                    {
+                        glideFactor = Math.Min(glideFactor, -GlidierGliderModSystem.Config.JetModeFixedGlideFactor);
+                    }
+
+                    if (controls.ShiftKey)
+                    {
+                        glideFactor = Math.Max(glideFactor, GlidierGliderModSystem.Config.JetModeFixedGlideFactor);
+                    }
+                }
 
                 controls.GlideSpeed = GameMath.Clamp(controls.GlideSpeed - (glideFactor * dt * GlidierGliderModSystem.Config.SpeedFactor), 
                     GlidierGliderModSystem.Config.SpeedMin, 
