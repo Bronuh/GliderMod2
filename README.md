@@ -48,7 +48,7 @@ I welcome contributions to this mod! If you'd like to help, please feel free to 
 
 * **Reporting Bugs:** If you find a bug, please create a new issue.
 
-## Development Guide (for Contributors)
+## Isolated Development Guide (for Contributors)
 
 ### Quick Start
 
